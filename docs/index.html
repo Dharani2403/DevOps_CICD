@@ -1,133 +1,612 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>My Food Blog</title>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Karma">
-<style>
-body,h1,h2,h3,h4,h5,h6 {font-family: "Karma", sans-serif}
-.w3-bar-block .w3-bar-item {padding:20px}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flappy Bird</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --sky-top: #1a1a2e;
+      --sky-mid: #16213e;
+      --sky-bottom: #0f3460;
+      --neon-yellow: #f7d716;
+      --neon-green: #39ff14;
+      --pipe-green: #1db954;
+      --pipe-dark: #158a3e;
+      --pipe-shine: #5dff8a;
+      --glow-yellow: rgba(247, 215, 22, 0.6);
+      --glow-green: rgba(57, 255, 20, 0.4);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 50%, var(--sky-bottom) 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Press Start 2P', monospace;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Starfield */
+    .stars {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .star {
+      position: absolute;
+      background: white;
+      border-radius: 50%;
+      animation: twinkle var(--dur) ease-in-out infinite;
+    }
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.2; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.4); }
+    }
+
+    h1 {
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(18px, 4vw, 28px);
+      color: var(--neon-yellow);
+      text-shadow:
+        0 0 10px var(--glow-yellow),
+        0 0 30px var(--glow-yellow),
+        0 0 60px var(--glow-yellow),
+        3px 3px 0 #a07a00;
+      letter-spacing: 4px;
+      margin-bottom: 16px;
+      animation: pulse-title 2s ease-in-out infinite;
+      position: relative;
+      z-index: 2;
+    }
+    @keyframes pulse-title {
+      0%, 100% { text-shadow: 0 0 10px var(--glow-yellow), 0 0 30px var(--glow-yellow), 3px 3px 0 #a07a00; }
+      50% { text-shadow: 0 0 20px var(--glow-yellow), 0 0 60px var(--glow-yellow), 0 0 100px var(--glow-yellow), 3px 3px 0 #a07a00; }
+    }
+
+    .canvas-wrapper {
+      position: relative;
+      z-index: 2;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow:
+        0 0 0 3px var(--neon-yellow),
+        0 0 30px var(--glow-yellow),
+        0 0 60px rgba(247, 215, 22, 0.2),
+        0 30px 60px rgba(0,0,0,0.6);
+    }
+
+    canvas {
+      display: block;
+    }
+
+    .hint {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 9px;
+      color: rgba(255,255,255,0.5);
+      margin-top: 14px;
+      letter-spacing: 2px;
+      z-index: 2;
+      position: relative;
+      animation: blink 1.5s step-end infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+  </style>
 </head>
 <body>
 
-<!-- Sidebar (hidden by default) -->
-<nav class="w3-sidebar w3-bar-block w3-card w3-top w3-xlarge w3-animate-left" style="display:none;z-index:2;width:40%;min-width:300px" id="mySidebar">
-  <a href="javascript:void(0)" onclick="w3_close()"
-  class="w3-bar-item w3-button">Close Menu</a>
-  <a href="#food" onclick="w3_close()" class="w3-bar-item w3-button">Food</a>
-  <a href="#about" onclick="w3_close()" class="w3-bar-item w3-button">About</a>
-</nav>
+  <div class="stars" id="stars"></div>
 
-<!-- Top menu -->
-<div class="w3-top">
-  <div class="w3-white w3-xlarge" style="max-width:1200px;margin:auto">
-    <div class="w3-button w3-padding-16 w3-left" onclick="w3_open()">☰</div>
-    <div class="w3-right w3-padding-16">Mail</div>
-    <div class="w3-center w3-padding-16">My Food</div>
+  <h1>⚡ FLAPPY BIRD ⚡</h1>
+  <div class="canvas-wrapper">
+    <canvas id="gameCanvas" width="400" height="520"></canvas>
   </div>
-</div>
-  
-<!-- !PAGE CONTENT! -->
-<div class="w3-main w3-content w3-padding" style="max-width:1200px;margin-top:100px">
+  <p class="hint">[ SPACE / TAP ] TO FLAP</p>
 
-  <!-- First Photo Grid-->
-  <div class="w3-row-padding w3-padding-16 w3-center" id="food">
-    <div class="w3-quarter">
-      <img src="https://vaya.in/recipes/wp-content/uploads/2018/06/Club-sandwich.jpg" alt="Sandwich" style="width:100%">
-      <h3>The Perfect Sandwich, A Real NYC Classic</h3>
-    </div>
-    <div class="w3-quarter">
-      <img src="https://arc-anglerfish-washpost-prod-washpost.s3.amazonaws.com/public/53BGPNAB6YI63C7LFNHEQGYVAA.jpg" alt="Steak" style="width:100%">
-      <h3>Let Me Tell You About This Steak</h3>
-    </div>
-    <div class="w3-quarter">
-      <img src="https://blog.lexmed.com/images/librariesprovider80/blog-post-featured-images/shutterstock_1933299218.jpg?sfvrsn=4a8d900b_0" alt="Cherries" style="width:100%">
-      <h3>Cherries, interrupted</h3>
-      <p>What else?</p>
-    </div>
-    <div class="w3-quarter">
-      <img src="https://www.acouplecooks.com/wp-content/uploads/2023/01/Red-Sauce-Pasta-008.jpg" alt="Pasta and Wine" style="width:100%">
-      <h3>Once Again, Robust Wine and Vegetable Pasta</h3>
-    </div>
-  </div>
-  
-  <!-- Second Photo Grid-->
-  <div class="w3-row-padding w3-padding-16 w3-center">
-    <div class="w3-quarter">
-      <img src="https://feelgoodfoodie.net/wp-content/uploads/2022/04/How-to-Make-Popsicles-15.jpg" alt="Popsicle" style="width:100%">
-      <h3>All I Need Is a Popsicle</h3>
-    </div>
-    <div class="w3-quarter">
-      <img src="https://www.wholesomeyum.com/wp-content/uploads/2021/07/wholesomeyum-Pan-Seared-Salmon-12.jpg" alt="Salmon" style="width:100%">
-      <h3>Salmon For Your Skin</h3>
-    </div>
-    <div class="w3-quarter">
-      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Desserts.jpg/640px-Desserts.jpg" alt="Sandwich" style="width:100%">
-      <h3>The Perfect Dessert</h3>
-    </div>
-    <div class="w3-quarter">
-      <img src="https://www.simplejoy.com/wp-content/uploads/2021/04/Croissant-French-Toast-5.jpg" alt="Croissant" style="width:100%">
-      <h3>Le French</h3>
-    </div>
-  </div>
+  <script>
+    // --- Starfield ---
+    const starsContainer = document.getElementById('stars');
+    for (let i = 0; i < 80; i++) {
+      const s = document.createElement('div');
+      s.className = 'star';
+      const size = Math.random() * 2.5 + 0.5;
+      s.style.cssText = `
+        width:${size}px; height:${size}px;
+        top:${Math.random()*100}%; left:${Math.random()*100}%;
+        --dur:${(Math.random()*2+1.5).toFixed(1)}s;
+        animation-delay:${(Math.random()*2).toFixed(1)}s;
+      `;
+      starsContainer.appendChild(s);
+    }
 
-  <!-- Pagination -->
-  <div class="w3-center w3-padding-32">
-    <div class="w3-bar">
-      <a href="#" class="w3-bar-item w3-button w3-hover-black">«</a>
-      <a href="#" class="w3-bar-item w3-black w3-button">1</a>
-      <a href="#" class="w3-bar-item w3-button w3-hover-black">2</a>
-      <a href="#" class="w3-bar-item w3-button w3-hover-black">3</a>
-      <a href="#" class="w3-bar-item w3-button w3-hover-black">4</a>
-      <a href="#" class="w3-bar-item w3-button w3-hover-black">»</a>
-    </div>
-  </div>
-  
-  <hr id="about">
+    // --- Game ---
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const W = canvas.width, H = canvas.height;
 
-  <!-- About Section -->
-  <div class="w3-container w3-padding-32 w3-center">  
-    <h3>About Me, The Food Man</h3><br>
-    <img src="https://www.cordonbleu.edu/Files/MediaFile/58300.jpg" alt="Me" class="w3-image" style="display:block;margin:auto" width="800" height="533">
-    <div class="w3-padding-32">
-      <h4><b>I am Who I Am!</b></h4>
-      <h6><i>With Passion For Real, Good Food</i></h6>
-      <p>Just me, myself and I, exploring the universe of unknownment. I have a heart of love and an interest on food blog. I want to share my world with you.</p>
-    </div>
-  </div>
-  <hr>
-  
-  <!-- Footer -->
-  <footer class="w3-row-padding w3-padding-32">
+    // ---- Assets (drawn procedurally) ----
 
-    <div class="w3-third w3-serif">
-      <h3>POPULAR TAGS</h3>
-      <p>
-        <span class="w3-tag w3-black w3-margin-bottom">Travel</span> <span class="w3-tag w3-dark-grey w3-small w3-margin-bottom">New York</span> <span class="w3-tag w3-dark-grey w3-small w3-margin-bottom">Dinner</span>
-        <span class="w3-tag w3-dark-grey w3-small w3-margin-bottom">Salmon</span> <span class="w3-tag w3-dark-grey w3-small w3-margin-bottom">France</span> <span class="w3-tag w3-dark-grey w3-small w3-margin-bottom">Drinks</span>
-        <span class="w3-tag w3-dark-grey w3-small w3-margin-bottom">Ideas</span> <span class="w3-tag w3-dark-grey w3-small w3-margin-bottom">Flavors</span> <span class="w3-tag w3-dark-grey w3-small w3-margin-bottom">Cuisine</span>
-        <span class="w3-tag w3-dark-grey w3-small w3-margin-bottom">Chicken</span> <span class="w3-tag w3-dark-grey w3-small w3-margin-bottom">Dressing</span> <span class="w3-tag w3-dark-grey w3-small w3-margin-bottom">Fried</span>
-        <span class="w3-tag w3-dark-grey w3-small w3-margin-bottom">Fish</span> <span class="w3-tag w3-dark-grey w3-small w3-margin-bottom">Duck</span>
-      </p>
-    </div>
-  </footer>
+    // Bird sprite drawn per-frame
+    function drawBird(x, y, angle, flapPhase) {
+      ctx.save();
+      ctx.translate(x + 15, y + 12);
+      ctx.rotate(angle);
 
-<!-- End page content -->
-</div>
+      // Glow
+      ctx.shadowColor = '#f7d716';
+      ctx.shadowBlur = 18;
 
-<script>
-// Script to open and close sidebar
-function w3_open() {
-  document.getElementById("mySidebar").style.display = "block";
-}
- 
-function w3_close() {
-  document.getElementById("mySidebar").style.display = "none";
-}
-</script>
+      // Body
+      const grad = ctx.createRadialGradient(-2, -2, 2, 0, 0, 14);
+      grad.addColorStop(0, '#ffe566');
+      grad.addColorStop(0.6, '#f7c500');
+      grad.addColorStop(1, '#b38900');
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 13, 11, 0, 0, Math.PI * 2);
+      ctx.fillStyle = grad;
+      ctx.fill();
 
+      // Wing (animated)
+      ctx.shadowBlur = 0;
+      const wingY = Math.sin(flapPhase) * 5;
+      ctx.beginPath();
+      ctx.ellipse(-3, wingY - 2, 9, 5, -0.4, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffd700';
+      ctx.fill();
+
+      // Eye
+      ctx.beginPath();
+      ctx.arc(6, -3, 3.5, 0, Math.PI * 2);
+      ctx.fillStyle = 'white';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(7, -3, 2, 0, Math.PI * 2);
+      ctx.fillStyle = '#111';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(7.5, -3.5, 0.6, 0, Math.PI * 2);
+      ctx.fillStyle = 'white';
+      ctx.fill();
+
+      // Beak
+      ctx.beginPath();
+      ctx.moveTo(11, 1);
+      ctx.lineTo(17, -1);
+      ctx.lineTo(11, 4);
+      ctx.closePath();
+      ctx.fillStyle = '#ff8c00';
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    // Pipe drawing
+    function drawPipe(x, topH, botH) {
+      const pw = 52;
+
+      // Shadow
+      ctx.shadowColor = 'rgba(0,0,0,0.5)';
+      ctx.shadowBlur = 10;
+      ctx.shadowOffsetX = 4;
+
+      // Top pipe body
+      const g1 = ctx.createLinearGradient(x, 0, x + pw, 0);
+      g1.addColorStop(0, '#0d7a2e');
+      g1.addColorStop(0.3, '#1db954');
+      g1.addColorStop(0.7, '#1db954');
+      g1.addColorStop(0.85, '#5dff8a');
+      g1.addColorStop(1, '#0a5c22');
+      ctx.fillStyle = g1;
+      ctx.fillRect(x, 0, pw, topH - 14);
+
+      // Top pipe cap
+      ctx.shadowBlur = 0; ctx.shadowOffsetX = 0;
+      const capGrad = ctx.createLinearGradient(x - 5, 0, x + pw + 5, 0);
+      capGrad.addColorStop(0, '#0a5c22');
+      capGrad.addColorStop(0.25, '#1db954');
+      capGrad.addColorStop(0.6, '#3dde7a');
+      capGrad.addColorStop(1, '#0a5c22');
+      ctx.fillStyle = capGrad;
+      roundRect(ctx, x - 5, topH - 26, pw + 10, 22, 5);
+      ctx.fill();
+
+      // Bottom pipe body
+      ctx.shadowColor = 'rgba(0,0,0,0.5)';
+      ctx.shadowBlur = 10;
+      ctx.shadowOffsetX = 4;
+      const botStart = H - botH;
+      ctx.fillStyle = g1;
+      ctx.fillRect(x, botStart + 14, pw, botH);
+
+      // Bottom pipe cap
+      ctx.shadowBlur = 0; ctx.shadowOffsetX = 0;
+      ctx.fillStyle = capGrad;
+      roundRect(ctx, x - 5, botStart, pw + 10, 22, 5);
+      ctx.fill();
+
+      // Shine lines
+      ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(x + 10, 0); ctx.lineTo(x + 10, topH - 14);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x + 10, botStart + 14); ctx.lineTo(x + 10, H);
+      ctx.stroke();
+    }
+
+    function roundRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    // Scrolling ground
+    let groundOffset = 0;
+    function drawGround() {
+      const gH = 48;
+      // Base ground
+      const gg = ctx.createLinearGradient(0, H - gH, 0, H);
+      gg.addColorStop(0, '#3d8b37');
+      gg.addColorStop(0.3, '#2d6e28');
+      gg.addColorStop(1, '#1a3d18');
+      ctx.fillStyle = gg;
+      ctx.fillRect(0, H - gH, W, gH);
+
+      // Ground stripe / dirt
+      ctx.fillStyle = '#a0522d';
+      ctx.fillRect(0, H - gH + 10, W, 12);
+
+      // Grass bumps
+      ctx.fillStyle = '#4caf50';
+      for (let gx = (groundOffset % 32) - 32; gx < W + 32; gx += 32) {
+        ctx.beginPath();
+        ctx.arc(gx + 16, H - gH + 2, 10, Math.PI, 0);
+        ctx.fill();
+      }
+    }
+
+    // Sky background
+    function drawSky() {
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, H - 48);
+      skyGrad.addColorStop(0, '#0d1b3e');
+      skyGrad.addColorStop(0.5, '#1a3a6e');
+      skyGrad.addColorStop(1, '#2a5298');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, W, H - 48);
+
+      // Distant city silhouette
+      ctx.fillStyle = 'rgba(10,20,50,0.7)';
+      const buildings = [
+        [0,80,40,180],[40,120,30,140],[70,60,50,200],[120,90,35,160],
+        [155,70,45,190],[200,110,30,150],[230,55,55,205],[285,95,40,165],
+        [325,75,50,185],[375,105,25,155]
+      ];
+      for (const [bx,bh,bw] of buildings) {
+        ctx.fillRect(bx, H - 48 - bh, bw, bh);
+        // Windows
+        ctx.fillStyle = 'rgba(255,240,100,0.15)';
+        for (let wy = H - 48 - bh + 8; wy < H - 55; wy += 14) {
+          for (let wx = bx + 5; wx < bx + bw - 8; wx += 10) {
+            if (Math.random() > 0.4) {
+              ctx.fillRect(wx, wy, 5, 7);
+            }
+          }
+        }
+        ctx.fillStyle = 'rgba(10,20,50,0.7)';
+      }
+
+      // Clouds
+      drawClouds();
+    }
+
+    let cloudX = [60, 200, 340];
+    function drawClouds() {
+      cloudX = cloudX.map((cx, i) => {
+        const cy = [60, 90, 45][i];
+        ctx.save();
+        ctx.globalAlpha = 0.25;
+        ctx.fillStyle = '#aaddff';
+        ctx.shadowColor = '#aaddff';
+        ctx.shadowBlur = 15;
+        [[0,0,30],[25,-10,25],[50,0,30],[-20,0,22],[70,0,22]].forEach(([ox,oy,r]) => {
+          ctx.beginPath();
+          ctx.arc(cx + ox, cy + oy, r, 0, Math.PI*2);
+          ctx.fill();
+        });
+        ctx.restore();
+        return cx - 0.3;
+      });
+      cloudX = cloudX.map(cx => cx < -120 ? W + 120 : cx);
+    }
+
+    // Particles
+    let particles = [];
+    function spawnParticles(x, y) {
+      for (let i = 0; i < 18; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 5 + 1;
+        particles.push({
+          x, y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          life: 1,
+          size: Math.random() * 7 + 2,
+          color: ['#f7d716','#ff8c00','#ff4444','#ffffff'][Math.floor(Math.random()*4)]
+        });
+      }
+    }
+    function updateParticles() {
+      particles = particles.filter(p => p.life > 0);
+      for (const p of particles) {
+        p.x += p.vx; p.y += p.vy;
+        p.vy += 0.15;
+        p.life -= 0.035;
+        p.size *= 0.96;
+      }
+    }
+    function drawParticles() {
+      for (const p of particles) {
+        ctx.save();
+        ctx.globalAlpha = p.life;
+        ctx.fillStyle = p.color;
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 6;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    // Score popup
+    let scorePopups = [];
+    function spawnScorePopup(x, y) {
+      scorePopups.push({ x, y, life: 1, vy: -1.5 });
+    }
+    function drawScorePopups() {
+      scorePopups = scorePopups.filter(p => p.life > 0);
+      for (const p of scorePopups) {
+        ctx.save();
+        ctx.globalAlpha = p.life;
+        ctx.fillStyle = '#f7d716';
+        ctx.shadowColor = '#f7d716';
+        ctx.shadowBlur = 10;
+        ctx.font = 'bold 14px "Press Start 2P"';
+        ctx.fillText('+1', p.x, p.y);
+        ctx.restore();
+        p.y += p.vy;
+        p.life -= 0.025;
+      }
+    }
+
+    // ---- Game State ----
+    let bird, pipes, score, isGameOver, flapPhase, screenShake, highScore;
+    highScore = 0;
+
+    function resetGame() {
+      bird = {
+        x: 70, y: 220,
+        width: 30, height: 24,
+        gravity: 0.38, lift: -7.2, velocity: 0,
+        angle: 0
+      };
+      pipes = [];
+      score = 0;
+      isGameOver = false;
+      flapPhase = 0;
+      screenShake = 0;
+      particles = [];
+      scorePopups = [];
+      groundOffset = 0;
+      createPipe();
+    }
+
+    const pipeWidth = 52;
+    const pipeGap = 130;
+    let pipeSpeed = 2.4;
+
+    function createPipe() {
+      const minH = 40, maxH = H - 48 - pipeGap - 40;
+      const topH = Math.random() * (maxH - minH) + minH;
+      const botH = H - 48 - topH - pipeGap;
+      pipes.push({ x: W + 10, topHeight: topH, bottomHeight: botH, scored: false });
+    }
+
+    function update() {
+      if (isGameOver) { updateParticles(); return; }
+
+      flapPhase += 0.25;
+      groundOffset += pipeSpeed;
+
+      bird.velocity += bird.gravity;
+      bird.y += bird.velocity;
+
+      // Angle based on velocity
+      bird.angle = Math.min(Math.max(bird.velocity * 0.06, -0.5), 1.1);
+
+      // Pipe movement
+      for (let pipe of pipes) {
+        pipe.x -= pipeSpeed;
+
+        // Collision
+        const bx = bird.x + 4, by = bird.y + 3;
+        const bw = bird.width - 6, bh = bird.height - 4;
+        if (
+          bx < pipe.x + pipeWidth &&
+          bx + bw > pipe.x &&
+          (by < pipe.topHeight || by + bh > H - 48 - pipe.bottomHeight)
+        ) {
+          triggerGameOver();
+          return;
+        }
+
+        if (pipe.x + pipeWidth < bird.x && !pipe.scored) {
+          score++;
+          if (score > highScore) highScore = score;
+          pipe.scored = true;
+          spawnScorePopup(pipe.x + pipeWidth / 2, H / 2 - 40);
+          pipeSpeed = 2.4 + score * 0.04;
+        }
+      }
+
+      pipes = pipes.filter(p => p.x + pipeWidth > 0);
+      if (pipes.length === 0 || pipes[pipes.length - 1].x < W - 220) createPipe();
+
+      // Ground & ceiling
+      if (bird.y + bird.height > H - 48 || bird.y < 0) {
+        triggerGameOver();
+      }
+
+      updateParticles();
+      if (screenShake > 0) screenShake -= 0.5;
+    }
+
+    function triggerGameOver() {
+      isGameOver = true;
+      spawnParticles(bird.x + 15, bird.y + 12);
+      screenShake = 12;
+    }
+
+    function flap() {
+      if (!isGameOver) {
+        bird.velocity = bird.lift;
+        flapPhase = Math.PI; // Wing flap reset
+      } else {
+        resetGame();
+      }
+    }
+
+    // ---- HUD ----
+    function drawHUD() {
+      // Score
+      ctx.save();
+      ctx.font = '20px "Press Start 2P"';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      ctx.fillText(score, W/2 + 2, 46);
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = '#f7d716';
+      ctx.shadowBlur = 12;
+      ctx.fillText(score, W/2, 44);
+      ctx.restore();
+
+      // High score small
+      ctx.save();
+      ctx.font = '8px "Press Start 2P"';
+      ctx.textAlign = 'right';
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.fillText(`BEST: ${highScore}`, W - 10, 18);
+      ctx.restore();
+    }
+
+    // Game Over Screen
+    function drawGameOver() {
+      // Dark overlay
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      ctx.fillRect(0, 0, W, H);
+
+      // Panel
+      const px = W/2 - 130, py = H/2 - 90, pw2 = 260, ph = 180;
+      ctx.shadowColor = '#f7d716';
+      ctx.shadowBlur = 30;
+      const panelGrad = ctx.createLinearGradient(px, py, px, py + ph);
+      panelGrad.addColorStop(0, '#1a1a2e');
+      panelGrad.addColorStop(1, '#0d0d1a');
+      ctx.fillStyle = panelGrad;
+      roundRect(ctx, px, py, pw2, ph, 14);
+      ctx.fill();
+      ctx.strokeStyle = '#f7d716';
+      ctx.lineWidth = 2.5;
+      roundRect(ctx, px, py, pw2, ph, 14);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      // Game Over text
+      ctx.font = '16px "Press Start 2P"';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#ff4444';
+      ctx.shadowColor = '#ff0000';
+      ctx.shadowBlur = 15;
+      ctx.fillText('GAME OVER', W/2, py + 38);
+
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = '#f7d716';
+      ctx.font = '11px "Press Start 2P"';
+      ctx.fillText(`SCORE: ${score}`, W/2, py + 72);
+
+      ctx.fillStyle = '#aaffaa';
+      ctx.font = '9px "Press Start 2P"';
+      ctx.fillText(`BEST: ${highScore}`, W/2, py + 100);
+
+      ctx.font = '8px "Press Start 2P"';
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      // Blink effect
+      if (Math.floor(Date.now() / 500) % 2 === 0) {
+        ctx.fillText('[ TAP TO PLAY AGAIN ]', W/2, py + 148);
+      }
+      ctx.restore();
+    }
+
+    // ---- Main Draw ----
+    function draw() {
+      ctx.save();
+      // Screen shake
+      if (screenShake > 0) {
+        ctx.translate(
+          (Math.random() - 0.5) * screenShake,
+          (Math.random() - 0.5) * screenShake
+        );
+      }
+
+      drawSky();
+
+      for (const pipe of pipes) {
+        drawPipe(pipe.x, pipe.topHeight, pipe.bottomHeight);
+      }
+
+      drawGround();
+      drawBird(bird.x, bird.y, bird.angle, flapPhase);
+      drawParticles();
+      drawScorePopups();
+      drawHUD();
+      ctx.restore();
+
+      if (isGameOver) drawGameOver();
+    }
+
+    function gameLoop() {
+      update();
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    // Controls
+    document.addEventListener("keydown", e => {
+      if (e.code === "Space" || e.code === "ArrowUp") { e.preventDefault(); flap(); }
+    });
+    canvas.addEventListener("click", flap);
+    canvas.addEventListener("touchstart", e => { e.preventDefault(); flap(); }, { passive: false });
+
+    resetGame();
+    gameLoop();
+  </script>
 </body>
 </html>
